@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>환자 상담 기록 | 연세노블병원</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#1a5f7a;--primary-dark:#134a60;--primary-light:#e8f4f8;
+  --danger:#e24b4a;--warn:#ef9f27;
+  --bg:#f0f4f7;--bg-card:#ffffff;--bg-input:#f8fafb;
+  --text:#1a2733;--text2:#4a6070;--text3:#8fa3b0;
+  --border:#dde5ea;--border2:#c8d5dd;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);
+  --shadow-lg:0 4px 16px rgba(0,0,0,.12);
+  --radius:10px;--radius-lg:14px;
+  --nav-h:56px;
+}
+html{font-size:16px}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;padding-bottom:80px}
+
+/* ── 상단 헤더 (모바일) ── */
+.top-bar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:var(--primary);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;height:52px;
+  box-shadow:0 2px 8px rgba(0,0,0,.2)
+}
+.top-bar-left{display:flex;align-items:center;gap:10px}
+.top-bar-icon{font-size:20px}
+.top-bar-title{font-size:15px;font-weight:700;color:#fff}
+.top-bar-sub{font-size:10px;color:rgba(255,255,255,.6)}
+.sync-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border-radius:20px;padding:4px 10px;font-size:11px;color:#fff;border:1px solid rgba(255,255,255,.2)}
+.sync-dot{width:6px;height:6px;border-radius:50%}
+.sync-dot.ok{background:#22c55e}.sync-dot.err{background:#e24b4a}.sync-dot.off{background:rgba(255,255,255,.4)}
+
+/* ── 하단 탭 바 ── */
+.tab-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#fff;border-top:1px solid var(--border);
+  display:flex;height:var(--nav-h);
+  box-shadow:0 -2px 12px rgba(0,0,0,.08)
+}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--text3);font-family:'Noto Sans KR',sans-serif;transition:color .15s;padding:6px 0}
+.tab-item.active{color:var(--primary)}
+.tab-item svg{width:22px;height:22px}
+.tab-item span{font-size:10px;font-weight:500}
+.tab-item.active span{font-weight:700}
+
+/* ── 페이지 컨테이너 ── */
+.page{display:none;padding:64px 0 16px}
+.page.active{display:block}
+.page-body{padding:0 14px}
+
+/* ── 섹션 카드 ── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.card-title svg{width:13px;height:13px;color:var(--primary)}
+
+/* ── 폼 ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid.full{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:700;color:var(--text2)}
+.field label .req{color:var(--danger);margin-left:2px}
+.field input,.field select,.field textarea{
+  font-size:15px;font-family:'Noto Sans KR',sans-serif;
+  border:1.5px solid var(--border);border-radius:8px;
+  padding:10px 12px;background:var(--bg-input);color:var(--text);
+  outline:none;transition:border .15s;width:100%;
+  -webkit-appearance:none;appearance:none
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);background:#fff}
+.field textarea{resize:vertical;min-height:72px;line-height:1.6}
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+/* ── 녹음 영역 ── */
+.rec-area{display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 0}
+.rec-timer{font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:500;color:var(--text);letter-spacing:.05em}
+.rec-timer.active{color:var(--danger)}
+.wave-wrap{height:28px;display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .3s}
+.wave-wrap.show{opacity:1}
+.wave-wrap span{width:3px;border-radius:2px;background:var(--primary);animation:wave 1s ease-in-out infinite}
+.wave-wrap span:nth-child(1){height:30%;animation-delay:0s}
+.wave-wrap span:nth-child(2){height:60%;animation-delay:.1s}
+.wave-wrap span:nth-child(3){height:100%;animation-delay:.2s}
+.wave-wrap span:nth-child(4){height:70%;animation-delay:.3s}
+.wave-wrap span:nth-child(5){height:40%;animation-delay:.4s}
+.wave-wrap span:nth-child(6){height:85%;animation-delay:.5s}
+.wave-wrap span:nth-child(7){height:55%;animation-delay:.6s}
+@keyframes wave{0%,100%{transform:scaleY(.3);opacity:.5}50%{transform:scaleY(1);opacity:1}}
+.rec-main-btn{width:88px;height:88px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:0 4px 20px rgba(0,0,0,.18)}
+.rec-main-btn.idle{background:var(--primary)}
+.rec-main-btn.recording{background:var(--danger);animation:rpulse 1.6s ease-in-out infinite}
+@keyframes rpulse{0%,100%{box-shadow:0 4px 16px rgba(226,75,74,.3)}50%{box-shadow:0 4px 30px rgba(226,75,74,.6)}}
+.rec-main-btn svg{width:34px;height:34px;color:#fff}
+.rec-label{font-size:13px;color:var(--text2);text-align:center}
+.rec-label strong{color:var(--text)}
+
+/* ── 텍스트 박스 ── */
+.transcript-box{background:var(--bg-input);border:1.5px solid var(--border);border-radius:8px;padding:12px;min-height:90px;font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap;word-break:break-all;max-height:180px;overflow-y:auto}
+.transcript-box.empty{color:var(--text3);font-style:italic}
+.ai-box{background:#f0f9f4;border:1.5px solid #bbdfc8;border-radius:8px;padding:12px;min-height:80px;font-size:13px;color:var(--text);line-height:1.9;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto}
+.ai-box.empty{color:var(--text3);font-style:italic;background:var(--bg-input);border-color:var(--border)}
+.ai-loading{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;padding:6px 0}
+.spin{animation:spin 1s linear infinite;display:inline-block;font-size:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── 버튼 ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);font-size:14px;font-weight:500;font-family:'Noto Sans KR',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap;min-height:44px}
+.btn:active{transform:scale(.96);opacity:.85}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-success{background:#16a34a;border-color:#16a34a;color:#fff}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn-sm{padding:8px 14px;font-size:12px;min-height:36px}
+.btn-full{width:100%}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+
+/* ── 알림 박스 ── */
+.notice{background:#e8f4f8;border:1px solid #b0d4e8;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--primary);display:flex;gap:7px;align-items:flex-start;margin-bottom:12px}
+.notice svg{width:14px;height:14px;flex-shrink:0;margin-top:1px}
+.notice-ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.notice-warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+
+/* ── 배지 ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.badge-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
+.badge-danger{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.badge-blue{background:var(--primary-light);color:var(--primary);border:1px solid #b0d4e8}
+.badge-cloud{background:#f0fdf4;color:#166534;border:1px solid #86efac;font-size:10px}
+.badge-local{background:#f8fafc;color:#64748b;border:1px solid #cbd5e1;font-size:10px}
+
+/* ── 목록 카드 ── */
+.record-card{background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.record-card:active{transform:scale(.98);background:var(--primary-light)}
+.rc-name{font-size:15px;font-weight:700;color:var(--text)}
+.rc-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.rc-preview{font-size:12px;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px}
+.records-empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.records-empty svg{width:44px;height:44px;margin-bottom:12px;opacity:.3}
+
+/* ── 상세 드로어 ── */
+.drawer-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200}
+.drawer-bg.show{display:block}
+.drawer{position:fixed;bottom:0;left:0;right:0;z-index:201;background:#fff;border-radius:20px 20px 0 0;padding:0 0 80px;max-height:90vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.drawer.show{transform:translateY(0)}
+.drawer-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 16px}
+.drawer-inner{padding:0 16px 16px}
+.drawer-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px}
+.drawer-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
+.d-section{margin-bottom:14px}
+.d-section-title{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.d-row{display:flex;flex-direction:column;gap:2px}
+.dl{font-size:10px;color:var(--text3);font-weight:600}
+.dv{font-size:13px;color:var(--text)}
+.d-text{background:var(--bg-input);border-radius:8px;padding:10px;font-size:12px;color:var(--text);line-height:1.8;white-space:pre-wrap;word-break:break-all;max-height:180px;overflow-y:auto}
+.d-ai{background:#f0f9f4;border:1px solid #bbdfc8;border-radius:8px;padding:10px;font-size:12px;color:var(--text);line-height:1.9;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto}
+
+/* ── 모달 ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:flex-end;justify-content:center;padding:0}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-height:85vh;overflow-y:auto}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.7}
+.step-box{background:#f8fafb;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:2}
+.step-box a{color:var(--primary);text-decoration:none;font-weight:600}
+.config-field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.config-field label{font-size:11px;font-weight:700;color:var(--text2)}
+.config-field input{font-size:13px;font-family:'JetBrains Mono',monospace;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg-input);color:var(--text);outline:none;width:100%}
+.config-field input:focus{border-color:var(--primary)}
+
+/* ── 설정 페이지 ── */
+.setting-item{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:var(--shadow)}
+.setting-item:active{background:var(--primary-light)}
+.setting-label{font-size:14px;font-weight:500;color:var(--text)}
+.setting-desc{font-size:11px;color:var(--text3);margin-top:2px}
+.setting-arrow{color:var(--text3);font-size:18px}
+
+/* ── 저장 상태 ── */
+#save-status{margin-top:10px;display:none}
+
+@media print{.top-bar,.tab-bar,.btn,.btn-row,.notice{display:none!important}.page{padding:0}.page-body{padding:0}.card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+</style>
+</head>
+<body>
+
+<!-- 상단 헤더 -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <div class="top-bar-icon">🏥</div>
+    <div>
+      <div class="top-bar-title">상담 기록 시스템</div>
+      <div class="top-bar-sub">연세노블병원 원무과</div>
+    </div>
+  </div>
+  <div class="sync-pill" id="sync-pill">
+    <div class="sync-dot off" id="sync-dot"></div>
+    <span id="sync-label" style="font-size:11px">연결 중...</span>
+  </div>
+</div>
+
+<!-- Gemini 모달 -->
+<div class="modal-bg" id="gemini-modal">
+  <div class="modal">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+    <h2>🔑 Gemini API 키 설정</h2>
+    <p class="modal-sub">AI 상담 자동 정리 기능에 필요합니다. 완전 무료입니다.</p>
+    <div class="step-box">
+      1. <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> 접속<br>
+      2. 구글 로그인 → <b>"Create API key"</b> 클릭<br>
+      3. <b>ysnoble-consult</b> 프로젝트 선택 → 키 복사
+    </div>
+    <div class="config-field">
+      <label>Gemini API Key</label>
+      <input type="password" id="gemini-key-input" placeholder="AIzaSy...">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveGeminiKey()">저장</button>
+      <button class="btn" onclick="document.getElementById('gemini-modal').classList.remove('show')">나중에</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상세 드로어 배경 -->
+<div class="drawer-bg" id="drawer-bg" onclick="closeDrawer()"></div>
+<!-- 상세 드로어 -->
+<div class="drawer" id="detail-drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-inner" id="drawer-content"></div>
+</div>
+
+<!-- ━━ 페이지: 새 상담 ━━ -->
+<div class="page active" id="page-new">
+  <div class="page-body">
+
+    <div class="card">
+      <div class="card-title">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+        환자 기본 정보
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>차트 번호 <span class="req">*</span></label><input type="text" id="f-chart" placeholder="2024-001234" inputmode="text"></div>
+        <div class="field"><label>환자명 <span class="req">*</span></label><input type="text" id="f-name" placeholder="홍길동"></div>
+        <div class="field"><label>생년월일</label><input type="text" id="f-birth" placeholder="YYYYMMDD" inputmode="numeric"></div>
+        <div class="field"><label>환자 연락처</label><input type="tel" id="f-phone" placeholder="010-0000-0000"></div>
+        <div class="field"><label>진단명 / 주증상</label><input type="text" id="f-diag" placeholder="뇌경색, 치매 등"></div>
+        <div class="field"><label>병실 / 병동</label><input type="text" id="f-ward" placeholder="301호"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="card-title">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        보호자 정보
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>보호자명</label><input type="text" id="f-gname" placeholder="보호자명"></div>
+        <div class="field"><label>관계</label>
+          <select id="f-rel">
+            <option value="">선택</option>
+            <option>배우자</option><option>자녀 (장남)</option><option>자녀 (장녀)</option><option>자녀</option>
+            <option>부모</option><option>형제자매</option><option>친척</option><option>지인</option><option>기타</option>
+          </select>
+        </div>
+        <div class="field"><label>보호자 연락처</label><input type="tel" id="f-gphone" placeholder="010-0000-0000"></div>
+        <div class="field"><label>상담 유형</label>
+          <select id="f-type">
+            <option>입원 상담</option><option>퇴원 상담</option><option>치료 설명</option>
+            <option>비용/수납 상담</option><option>불만/민원 상담</option><option>서비스 문의</option><option>기타 상담</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid full" style="margin-top:10px">
+        <div class="field"><label>상담 전 메모</label>
+          <textarea id="f-prememo" placeholder="사전 요청사항 등..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        상담 녹음
+      </div>
+      <div class="notice">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        Chrome 브라우저에서 마이크 권한을 허용해 주세요.
+      </div>
+      <div class="rec-area">
+        <div class="rec-timer" id="rec-timer">00:00</div>
+        <div class="wave-wrap" id="wave-wrap">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <button class="rec-main-btn idle" id="rec-btn" onclick="toggleRec()">
+          <svg id="rec-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+        <div class="rec-label" id="rec-label">탭하여 <strong>녹음 시작</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>음성 인식 원문
+        </span>
+        <button class="btn btn-sm" onclick="clearTranscript()">지우기</button>
+      </div>
+      <div class="transcript-box empty" id="transcript-box">녹음 종료 후 전체 내용이 한꺼번에 표시됩니다. (녹음 중에는 표시 안 됨)</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          AI 자동 정리
+        </span>
+        <button class="btn btn-sm btn-primary" id="ai-run-btn" onclick="runAI()" disabled>▶ 실행</button>
+      </div>
+      <div id="ai-loading" style="display:none">
+        <div class="ai-loading"><span class="spin">⟳</span> Gemini 분석 중...</div>
+      </div>
+      <div class="ai-box empty" id="ai-box">녹음 완료 후 'AI 실행' 버튼을 누르세요.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        메모 및 저장
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>상담 결과</label>
+          <select id="f-result">
+            <option value="완료">완료</option><option value="추가상담필요">추가 상담 필요</option>
+            <option value="타부서이관">타 부서 이관</option><option value="미해결">미해결</option>
+          </select>
+        </div>
+        <div class="field"><label>담당자</label><input type="text" id="f-staff" placeholder="원무과 홍길동"></div>
+      </div>
+      <div class="form-grid full" style="margin-top:10px">
+        <div class="field"><label>담당자 메모</label>
+          <textarea id="f-memo" placeholder="향후 조치사항, 특이사항..."></textarea>
+        </div>
+      </div>
+      <div id="save-status"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-success" style="flex:1" onclick="saveRecord()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+          저장
+        </button>
+        <button class="btn" onclick="resetForm()">초기화</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ━━ 페이지: 목록 ━━ -->
+<div class="page" id="page-list">
+  <div class="page-body">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+      <input type="search" id="search-input" placeholder="🔍 이름 또는 차트번호 검색"
+        style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;background:#fff"
+        oninput="filterList()">
+      <button class="btn btn-sm" onclick="loadRecords()" style="padding:10px 12px">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0115 0M20 15a9 9 0 01-15 0"/></svg>
+      </button>
+    </div>
+    <div id="list-sub" style="font-size:12px;color:var(--text3);margin-bottom:10px;padding-left:2px">로딩 중...</div>
+    <div id="list-container"></div>
+  </div>
+</div>
+
+<!-- ━━ 페이지: 설정 ━━ -->
+<div class="page" id="page-settings">
+  <div class="page-body">
+    <div style="font-size:13px;color:var(--text3);margin-bottom:14px;padding-top:4px">앱 설정 및 연동 관리</div>
+
+    <div class="setting-item" onclick="openGeminiModal()">
+      <div>
+        <div class="setting-label">🤖 Gemini API 키</div>
+        <div class="setting-desc" id="gemini-status-text">AI 상담 자동 정리 기능</div>
+      </div>
+      <div class="setting-arrow">›</div>
+    </div>
+
+    <div class="setting-item" style="cursor:default">
+      <div>
+        <div class="setting-label">🔥 Firebase</div>
+        <div class="setting-desc">ysnoble-consult 프로젝트 연결됨</div>
+      </div>
+      <div id="fb-status-icon" style="font-size:16px">⏳</div>
+    </div>
+
+    <div class="card" style="margin-top:4px">
+      <div class="card-title">앱 정보</div>
+      <div style="font-size:13px;color:var(--text2);line-height:2">
+        🏥 연세노블병원 원무과 상담 기록 시스템<br>
+        🎤 음성 인식: Web Speech API (Chrome 권장)<br>
+        ☁️ 데이터: Firebase Firestore<br>
+        🤖 AI: Google Gemini 2.0 Flash<br>
+        🌐 URL: minseuk04-cloud.github.io/ysnoble-consult/
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Firestore 보안 규칙 안내</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.9">
+        Firebase 콘솔 → Firestore Database → Rules 탭에서 아래 규칙을 적용하세요:
+      </div>
+      <div style="background:#1e293b;border-radius:8px;padding:12px;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;line-height:1.8;overflow-x:auto">
+        rules_version = '2';<br>
+        service cloud.firestore {<br>
+        &nbsp;match /databases/{db}/documents {<br>
+        &nbsp;&nbsp;match /consultations/{id} {<br>
+        &nbsp;&nbsp;&nbsp;allow read, write: if request.time<br>
+        &nbsp;&nbsp;&nbsp;&lt; timestamp.date(2030,12,31);<br>
+        &nbsp;&nbsp;}<br>
+        &nbsp;}<br>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ━━ 하단 탭 바 ━━ -->
+<div class="tab-bar">
+  <button class="tab-item active" id="tab-new" onclick="showPage('new')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    <span>새 상담</span>
+  </button>
+  <button class="tab-item" id="tab-list" onclick="showPage('list')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    <span>기록 목록</span>
+  </button>
+  <button class="tab-item" id="tab-settings" onclick="showPage('settings')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+    <span>설정</span>
+  </button>
+</div>
+
+<script type="module">
+import { initializeApp }   from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, orderBy, query, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+
+// ━━ Firebase Config ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const firebaseConfig = {
+  apiKey:            "AIzaSyBHDAglpGe1trkjsb_K8wTd2_iMNHxGOrQ",
+  authDomain:        "ysnoble-consult.firebaseapp.com",
+  projectId:         "ysnoble-consult",
+  storageBucket:     "ysnoble-consult.firebasestorage.app",
+  messagingSenderId: "135924503801",
+  appId:             "1:135924503801:web:5312c6ed1f7ccc5bcfbe28"
+};
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let db = null, records = [];
+let isRecording = false, timerInterval = null, seconds = 0;
+let recognition = null, fullTranscript = '', aiContent = '';
+let recordingChunks = []; // 녹음 중 임시 저장 (종료 후 합산)
+
+// ── Firebase ────────────────────────────────────────────────────
+async function initFirebase() {
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    setSyncStatus('ok', '연결됨 ✅');
+    document.getElementById('fb-status-icon').textContent = '✅';
+  } catch(e) {
+    setSyncStatus('err', 'Firebase 오류');
+    document.getElementById('fb-status-icon').textContent = '❌';
+  }
+}
+function setSyncStatus(type, label) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + type;
+  document.getElementById('sync-label').textContent = label;
+}
+
+// ── Nav ─────────────────────────────────────────────────────────
+window.showPage = function(p) {
+  ['new','list','settings'].forEach(id => {
+    document.getElementById('page-'+id).classList.toggle('active', id===p);
+    document.getElementById('tab-'+id).classList.toggle('active', id===p);
+  });
+  if (p==='list') loadRecords();
+}
+
+// ── Gemini Modal ────────────────────────────────────────────────
+window.openGeminiModal = function() {
+  const k = localStorage.getItem('gemini_api_key')||'';
+  if (k) document.getElementById('gemini-key-input').value = k;
+  document.getElementById('gemini-modal').classList.add('show');
+}
+window.saveGeminiKey = function() {
+  const k = document.getElementById('gemini-key-input').value.trim();
+  if (!k) { alert('API 키를 입력해 주세요.'); return; }
+  localStorage.setItem('gemini_api_key', k);
+  document.getElementById('gemini-modal').classList.remove('show');
+  document.getElementById('gemini-status-text').textContent = 'Gemini API 설정됨 ✅';
+  alert('저장되었습니다 ✅');
+}
+
+// ── Recording ───────────────────────────────────────────────────
+window.toggleRec = function() { isRecording ? stopRec() : startRec(); }
+function startRec() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Chrome 브라우저를 사용해 주세요.'); return; }
+  recognition = new SR();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  // 녹음 중: 텍스트 표시 안 함, 내부에만 누적 저장
+  recognition.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        fullTranscript += e.results[i][0].transcript + ' ';
+      }
+    }
+    // 녹음 중 화면에는 글자 수만 표시 (미리보기 없음)
+    const box = document.getElementById('transcript-box');
+    box.classList.remove('empty');
+    const charCount = fullTranscript.trim().length;
+    box.textContent = charCount > 0
+      ? `🎙 녹음 중... (${charCount}자 수집됨)\n녹음을 종료하면 전체 내용이 표시됩니다.`
+      : '🎙 녹음 중... 말씀해 주세요.';
+  };
+  recognition.onerror = e => { if(e.error==='not-allowed') alert('마이크 권한을 허용해 주세요.'); };
+  recognition.start();
+  isRecording = true; seconds = 0;
+  timerInterval = setInterval(() => {
+    seconds++;
+    const el = document.getElementById('rec-timer');
+    el.textContent = String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+    el.className = 'rec-timer active';
+  }, 1000);
+  document.getElementById('rec-btn').className = 'rec-main-btn recording';
+  document.getElementById('rec-icon').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
+  document.getElementById('rec-label').innerHTML = '🔴 녹음 중 — 탭하여 <strong>중지</strong>';
+  document.getElementById('wave-wrap').classList.add('show');
+}
+function stopRec() {
+  if (recognition) { recognition.stop(); recognition = null; }
+  isRecording = false; clearInterval(timerInterval);
+  document.getElementById('rec-btn').className = 'rec-main-btn idle';
+  document.getElementById('rec-icon').innerHTML = '<path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>';
+  document.getElementById('rec-timer').className = 'rec-timer';
+  document.getElementById('wave-wrap').classList.remove('show');
+  // 녹음 종료 후 전체 텍스트 한꺼번에 표시
+  const finalText = fullTranscript.trim();
+  const box = document.getElementById('transcript-box');
+  if (finalText) {
+    box.classList.remove('empty');
+    box.textContent = finalText;
+    document.getElementById('ai-run-btn').disabled = false;
+    document.getElementById('rec-label').innerHTML = `✅ 완료 (${finalText.length}자) — 탭하여 <strong>재녹음</strong>`;
+  } else {
+    box.classList.add('empty');
+    box.textContent = '인식된 내용이 없습니다. 다시 녹음해 주세요.';
+    document.getElementById('rec-label').innerHTML = '탭하여 <strong>재녹음</strong>';
+  }
+}
+window.clearTranscript = function() {
+  fullTranscript = '';
+  const box = document.getElementById('transcript-box');
+  box.textContent = '녹음을 시작하면 음성이 실시간으로 표시됩니다...';
+  box.classList.add('empty');
+  document.getElementById('ai-run-btn').disabled = true;
+  document.getElementById('rec-label').innerHTML = '탭하여 <strong>녹음 시작</strong>';
+  aiContent = '';
+  const ab = document.getElementById('ai-box');
+  ab.textContent = "녹음 완료 후 'AI 실행' 버튼을 누르세요.";
+  ab.classList.add('empty');
+}
+
+// ── Gemini AI ───────────────────────────────────────────────────
+window.runAI = async function() {
+  const text = fullTranscript.trim();
+  if (!text) { alert('먼저 녹음을 진행해 주세요.'); return; }
+  const apiKey = localStorage.getItem('gemini_api_key')||'';
+  if (!apiKey) { if(confirm('Gemini API 키가 없습니다. 설정하시겠습니까?')) openGeminiModal(); return; }
+  const btn = document.getElementById('ai-run-btn');
+  btn.disabled = true;
+  document.getElementById('ai-loading').style.display = '';
+  const aiBox = document.getElementById('ai-box');
+  aiBox.textContent = ''; aiBox.classList.remove('empty');
+  const pname = document.getElementById('f-name').value||'환자';
+  const ptype = document.getElementById('f-type').value||'상담';
+  const prompt = `당신은 병원 원무과 상담 기록 전문가입니다. 아래는 ${pname} 환자(또는 보호자)와의 ${ptype} 음성 녹음 원문입니다.
+
+[원문]
+${text}
+
+다음 형식으로 정리해 주세요:
+
+1. 상담 요약 (2~3문장)
+2. 주요 호소 내용 / 문의사항
+3. 제공된 설명 및 안내 내용
+4. 합의사항 또는 결정사항
+5. 향후 조치사항
+6. 권장 해결방안 (담당자가 취할 수 있는 구체적인 조치 2~3가지 제안)
+
+간결하고 객관적인 3인칭 의료 기록 문체로 작성해 주세요. 6번 권장 해결방안은 상담 내용을 바탕으로 실질적으로 도움이 되는 방안을 제시해 주세요.`;
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0.3,maxOutputTokens:1500}}) }
+    );
+    const data = await resp.json();
+    if (data.error) { aiBox.textContent = `오류: ${data.error.message}`; }
+    else { aiContent = data.candidates?.[0]?.content?.parts?.[0]?.text||'결과 없음'; aiBox.textContent = aiContent; }
+  } catch(e) { aiBox.textContent = '네트워크 오류: '+e.message; }
+  document.getElementById('ai-loading').style.display = 'none';
+  btn.disabled = false;
+}
+
+// ── Save ────────────────────────────────────────────────────────
+window.saveRecord = async function() {
+  const chart = document.getElementById('f-chart').value.trim();
+  const name  = document.getElementById('f-name').value.trim();
+  if (!chart||!name) { alert('차트 번호와 환자명은 필수입니다.'); return; }
+  const rec = {
+    savedAt: new Date().toLocaleString('ko-KR'), chart, name,
+    birth:   document.getElementById('f-birth').value,
+    phone:   document.getElementById('f-phone').value,
+    diag:    document.getElementById('f-diag').value,
+    ward:    document.getElementById('f-ward').value,
+    gname:   document.getElementById('f-gname').value,
+    rel:     document.getElementById('f-rel').value,
+    gphone:  document.getElementById('f-gphone').value,
+    type:    document.getElementById('f-type').value,
+    prememo: document.getElementById('f-prememo').value,
+    duration:document.getElementById('rec-timer').textContent,
+    transcript: fullTranscript.trim(),
+    aiSummary:  aiContent,
+    memo:    document.getElementById('f-memo').value,
+    staff:   document.getElementById('f-staff').value,
+    result:  document.getElementById('f-result').value
+  };
+  const statusEl = document.getElementById('save-status');
+  statusEl.style.display = 'block';
+  if (db) {
+    try {
+      setSyncStatus('ok', '저장 중...');
+      await addDoc(collection(db,'consultations'), {...rec, createdAt: serverTimestamp()});
+      setSyncStatus('ok', '연결됨 ✅');
+      statusEl.innerHTML = '<div class="notice notice-ok" style="margin-top:10px">☁️ Firebase에 저장 완료!</div>';
+      const lr = JSON.parse(localStorage.getItem('consult_local')||'[]');
+      lr.unshift({...rec,_source:'firebase'}); localStorage.setItem('consult_local',JSON.stringify(lr));
+      setTimeout(()=>{ resetForm(); showPage('list'); }, 1200);
+    } catch(e) {
+      saveLocal(rec);
+      statusEl.innerHTML = `<div class="notice notice-warn" style="margin-top:10px">⚠️ Firebase 오류 — 로컬 저장됨</div>`;
+      setTimeout(()=>{ resetForm(); showPage('list'); }, 1500);
+    }
+  } else {
+    saveLocal(rec);
+    statusEl.innerHTML = '<div class="notice notice-warn" style="margin-top:10px">💾 로컬에 저장됨 (Firebase 미연결)</div>';
+    setTimeout(()=>{ resetForm(); showPage('list'); }, 1500);
+  }
+}
+function saveLocal(rec) {
+  const lr = JSON.parse(localStorage.getItem('consult_local')||'[]');
+  lr.unshift({...rec,id:Date.now(),_source:'local'}); localStorage.setItem('consult_local',JSON.stringify(lr));
+}
+window.resetForm = function() {
+  ['f-chart','f-name','f-birth','f-phone','f-diag','f-ward','f-gname','f-gphone','f-prememo','f-memo','f-staff'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  document.getElementById('f-rel').value='';
+  document.getElementById('f-type').selectedIndex=0;
+  document.getElementById('f-result').selectedIndex=0;
+  document.getElementById('rec-timer').textContent='00:00';
+  document.getElementById('rec-timer').className='rec-timer';
+  document.getElementById('save-status').style.display='none';
+  fullTranscript=''; aiContent=''; clearTranscript();
+  if(isRecording) stopRec(); seconds=0;
+}
+
+// ── List ────────────────────────────────────────────────────────
+window.loadRecords = async function() {
+  document.getElementById('list-sub').textContent = '불러오는 중...';
+  if (db) {
+    try {
+      const snap = await getDocs(query(collection(db,'consultations'), orderBy('createdAt','desc')));
+      records = snap.docs.map(d=>({...d.data(),_id:d.id,_source:'firebase'}));
+      document.getElementById('list-sub').textContent = `☁️ Firebase 기록 ${records.length}건`;
+    } catch(e) {
+      records = JSON.parse(localStorage.getItem('consult_local')||'[]');
+      document.getElementById('list-sub').textContent = `💾 로컬 기록 ${records.length}건`;
+    }
+  } else {
+    records = JSON.parse(localStorage.getItem('consult_local')||'[]');
+    document.getElementById('list-sub').textContent = `💾 로컬 기록 ${records.length}건`;
+  }
+  renderList(records);
+}
+window.filterList = function() {
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const filtered = records.filter(r=>r.name?.toLowerCase().includes(q)||r.chart?.toLowerCase().includes(q));
+  document.getElementById('list-sub').textContent = `전체 ${records.length}건${q?' / 검색 '+filtered.length+'건':''}`;
+  renderList(filtered);
+}
+function renderList(list) {
+  const c = document.getElementById('list-container');
+  if (!list||list.length===0) {
+    c.innerHTML = `<div class="records-empty">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <div style="font-size:15px;font-weight:500;color:var(--text2);margin-bottom:4px">기록이 없습니다</div>
+      <div style="font-size:12px">'새 상담' 탭에서 첫 기록을 작성해 보세요</div>
+    </div>`;
+    return;
+  }
+  c.innerHTML = list.map((r,i)=>{
+    const bc = r.result==='완료'?'badge-ok':r.result==='미해결'?'badge-danger':'badge-warn';
+    const src = r._source==='firebase'?'<span class="badge badge-cloud">☁️</span>':'<span class="badge badge-local">💾</span>';
+    const preview = r.aiSummary||r.transcript||r.prememo||r.memo||'(내용 없음)';
+    return `<div class="record-card" onclick="showDetail(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div><div class="rc-name">${r.name}</div><div class="rc-meta">차트 ${r.chart}${r.ward?' · '+r.ward:''}${r.diag?' · '+r.diag:''}</div></div>
+        <div style="text-align:right;flex-shrink:0;margin-left:8px"><span class="badge ${bc}">${r.result}</span><div style="font-size:10px;color:var(--text3);margin-top:4px">${(r.savedAt||'').split(' ')[0]||''}</div></div>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+        <span class="badge badge-blue">${r.type}</span>${src}
+        ${r.duration&&r.duration!=='00:00'?`<span class="badge" style="background:#f1f5f9;color:#475569;border:1px solid #cbd5e1">🎙 ${r.duration}</span>`:''}
+      </div>
+      <div class="rc-preview">${preview.slice(0,100)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Detail Drawer ───────────────────────────────────────────────
+window.showDetail = function(i) {
+  const q = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const list = q ? records.filter(r=>r.name?.toLowerCase().includes(q)||r.chart?.toLowerCase().includes(q)) : records;
+  const r = list[i]; if(!r) return;
+  const src = r._source==='firebase'?'☁️ Firebase':'💾 로컬';
+  document.getElementById('drawer-content').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div class="drawer-title">${r.name} 환자 상담</div>
+      <button class="btn btn-sm" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-sub">${src} · ${r.savedAt||''}${r.staff?' · '+r.staff:''}</div>
+    <div class="d-section">
+      <div class="d-section-title">환자 정보</div>
+      <div class="d-grid">
+        <div class="d-row"><div class="dl">차트번호</div><div class="dv">${r.chart}</div></div>
+        <div class="d-row"><div class="dl">생년월일</div><div class="dv">${r.birth||'-'}</div></div>
+        <div class="d-row"><div class="dl">환자 연락처</div><div class="dv">${r.phone||'-'}</div></div>
+        <div class="d-row"><div class="dl">진단/증상</div><div class="dv">${r.diag||'-'}</div></div>
+        <div class="d-row"><div class="dl">병실</div><div class="dv">${r.ward||'-'}</div></div>
+        <div class="d-row"><div class="dl">상담 유형</div><div class="dv">${r.type||'-'}</div></div>
+      </div>
+    </div>
+    ${r.gname||r.gphone?`<div class="d-section">
+      <div class="d-section-title">보호자 정보</div>
+      <div class="d-grid">
+        <div class="d-row"><div class="dl">보호자</div><div class="dv">${r.gname||'-'}${r.rel?' ('+r.rel+')':''}</div></div>
+        <div class="d-row"><div class="dl">연락처</div><div class="dv">${r.gphone||'-'}</div></div>
+      </div>
+    </div>`:''}
+    ${r.transcript?`<div class="d-section">
+      <div class="d-section-title">음성 인식 원문 ${r.duration&&r.duration!=='00:00'?'('+r.duration+')':''}</div>
+      <div class="d-text">${r.transcript}</div>
+    </div>`:''}
+    ${r.aiSummary?`<div class="d-section">
+      <div class="d-section-title">AI 상담 정리</div>
+      <div class="d-ai">${r.aiSummary}</div>
+    </div>`:''}
+    ${r.memo?`<div class="d-section">
+      <div class="d-section-title">담당자 메모</div>
+      <div class="d-text">${r.memo}</div>
+    </div>`:''}
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-danger btn-sm" onclick="deleteRecord('${r._id||''}',${i})">🗑 삭제</button>
+      <button class="btn btn-sm" onclick="window.print()">🖨 인쇄</button>
+    </div>
+  `;
+  document.getElementById('drawer-bg').classList.add('show');
+  document.getElementById('detail-drawer').classList.add('show');
+}
+window.closeDrawer = function() {
+  document.getElementById('drawer-bg').classList.remove('show');
+  document.getElementById('detail-drawer').classList.remove('show');
+}
+window.deleteRecord = async function(fbId, idx) {
+  if (!confirm('이 상담 기록을 삭제하시겠습니까?')) return;
+  if (db && fbId) {
+    try { await deleteDoc(doc(db,'consultations',fbId)); } catch(e) { alert('삭제 실패: '+e.message); return; }
+  } else {
+    const lr = JSON.parse(localStorage.getItem('consult_local')||'[]');
+    lr.splice(idx,1); localStorage.setItem('consult_local',JSON.stringify(lr));
+  }
+  closeDrawer(); await loadRecords();
+}
+
+// ── Init ────────────────────────────────────────────────────────
+await initFirebase();
+if (localStorage.getItem('gemini_api_key')) {
+  document.getElementById('gemini-status-text').textContent = 'Gemini API 설정됨 ✅';
+} else {
+  setTimeout(()=>openGeminiModal(), 800);
+}
+</script>
+</body>
+</html>
